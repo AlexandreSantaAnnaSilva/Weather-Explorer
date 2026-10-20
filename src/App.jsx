@@ -1,0 +1,116 @@
+import { useEffect, useState } from 'react';
+import { getWeather } from './api';
+import { initialState, levelOf, register } from './game';
+import { useLocalStorage } from './useLocalStorage';
+import { notFoundArt } from './units';
+import SearchBar from './components/SearchBar';
+import Weather from './components/Weather';
+import Passport from './components/Passport';
+
+export default function App() {
+  const [data, setData] = useState(null);
+  const [run, setRun] = useState(0); // reinicia as animações a cada busca
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [units, setUnits] = useLocalStorage('we-units', 'C');
+  const [favs, setFavs] = useLocalStorage('we-favs', []);
+  const [game, setGame] = useLocalStorage('we-game', initialState);
+
+  // o azul do fundo escurece quando é noite na cidade pesquisada
+  useEffect(() => {
+    const w = data?.current.weather[0];
+    document.body.dataset.theme = w && w.icon.endsWith('n') ? 'night' : '';
+  }, [data]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  async function load(params) {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await getWeather(params);
+      setData(res);
+      setRun((r) => r + 1);
+      const c = res.current;
+      const out = register(game, { id: c.id, name: c.name, country: c.sys.country, temp: c.main.temp, main: c.weather[0].main });
+      setGame(out.state);
+      const msgs = [];
+      if (out.isNew) msgs.push(`Novo carimbo: ${c.name}! +10 XP`);
+      out.won.forEach((b) => msgs.push(`Conquista: ${b.name}! +25 XP`));
+      if (msgs.length) setToast(msgs);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function locate() {
+    if (!navigator.geolocation) return setError('Seu navegador não permite geolocalização.');
+    navigator.geolocation.getCurrentPosition(
+      (p) => load({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      () => setError('Não foi possível obter sua localização. Permita o acesso ou busque pelo nome.'),
+    );
+  }
+
+  const favKey = data ? `${data.current.name},${data.current.sys.country}` : '';
+  const isFav = favs.includes(favKey);
+  const toggleFav = () => setFavs(isFav ? favs.filter((f) => f !== favKey) : [...favs, favKey]);
+
+  return (
+    <main className="stack">
+      <h1 className="sr">Weather Explorer</h1>
+      {toast && <div className="toast" role="status">{toast.map((m) => <p key={m}>{m}</p>)}</div>}
+
+      <section className="card" aria-busy={loading}>
+        <SearchBar onSearch={load} onLocate={locate} loading={loading} />
+
+        {favs.length > 0 && (
+          <div className="chips">
+            {favs.map((f) => (
+              <span key={f} className="chip">
+                <button onClick={() => load({ q: f })}>{f.split(',')[0]}</button>
+                <button className="rm" onClick={() => setFavs(favs.filter((x) => x !== f))} aria-label={`Remover ${f}`}>remover</button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className={`reveal${error ? ' open' : ''}`}>
+          <div>
+            {error && (
+              <div className="err" role="alert">
+                {error.startsWith('Cidade') && <img src={notFoundArt} alt="" />}
+                <p>{error}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className={`reveal${data && !error ? ' open' : ''}`}>
+          <div>
+            {data && (
+              <Weather key={run} c={data.current} forecast={data.forecast} units={units}
+                onUnits={() => setUnits(units === 'C' ? 'F' : 'C')} isFav={isFav} onFav={toggleFav} />
+            )}
+          </div>
+        </div>
+      </section>
+
+      <button className="pp-btn" onClick={() => setShowPass((v) => !v)} aria-expanded={showPass}>
+        Passaporte climático · Nível {levelOf(game.xp).level}
+      </button>
+      <div className={`reveal${showPass ? ' open' : ''}`}>
+        <div><section className="card"><Passport game={game} /></section></div>
+      </div>
+
+      <footer>Dados: OpenWeatherMap</footer>
+    </main>
+  );
+}
