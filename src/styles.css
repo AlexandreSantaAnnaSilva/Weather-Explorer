@@ -99,21 +99,40 @@ h2, h3, .temp { font-family: 'Poppins', 'Roboto', sans-serif; font-weight: 800; 
 .rain.high { background: #0b4468; box-shadow: inset 0 0 0 2px var(--sky); color: #fff; }
 .rain.note { padding: 14px 18px; }
 
-/* ---------- passaporte ---------- */
+/* ---------- passaporte: álbum de selos ---------- */
 .pp-btn { justify-self: center; padding: 8px 18px; border: 2px solid rgba(223, 246, 255, .5); border-radius: 999px; color: #fff; font-weight: 500; transition: .3s; }
 .pp-btn:hover { background: var(--ice); color: var(--navy); }
-.level { margin: 6px 0 10px; font-weight: 700; }
-.bar { height: 12px; margin-bottom: 6px; background: var(--ice); border-radius: 99px; overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--navy); transition: width .5s; }
-.passport h3 { margin-top: 20px; font-size: 1.05rem; }
-.pp-main h3:first-child { margin-top: 0; }
-.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 8px; }
-.badge { display: grid; gap: 2px; padding: 12px; border: 2px dashed #9fb7c4; border-radius: 12px; opacity: .6; font-size: .85rem; }
-.badge.on { opacity: 1; background: var(--navy); border: 2px solid var(--navy); color: #fff; }
-.stamps { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.stamp { display: grid; padding: 8px 14px; border: 2px solid var(--navy); border-radius: 10px; transform: rotate(-2deg); animation: pop .35s ease-out; }
-.stamp:nth-child(even) { transform: rotate(2deg); }
-.stamp small { opacity: .75; }
+.album-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 24px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #0b4468, var(--navy)); box-shadow: inset 0 0 0 3px rgba(223, 246, 255, .18); }
+.album-kicker { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ice); opacity: .8; }
+.album-head h2 { margin-top: 2px; font-size: 1.6rem; line-height: 1.15; }
+.album-lv { margin-top: 4px; font-size: 14px; opacity: .85; }
+.album-count { padding: 10px 20px; text-align: center; background: rgba(223, 246, 255, .12); border-radius: 14px; }
+.album-count b { display: block; font-family: 'Poppins', 'Roboto', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1; }
+.album-count small { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.xp { margin-top: 16px; }
+.xp-bar { height: 18px; background: var(--ice); border: 2px solid var(--navy); border-radius: 99px; overflow: hidden; }
+.xp-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(#ffd23f, #f0a500); box-shadow: inset 0 3px 0 rgba(255, 255, 255, .45); transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+.xp small { display: block; margin-top: 6px; font-size: 13px; font-weight: 500; }
+.album h3 { margin: 26px 0 12px; font-size: 1.05rem; }
+
+.seals { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 14px; }
+.seal { display: grid; justify-items: center; gap: 4px; padding: 16px 10px 14px; text-align: center; background: #f1f5f8; border: 2px solid transparent; border-radius: 16px; transition: transform .25s, border-color .25s; }
+.seal.on { background: var(--ice); border-color: var(--tier); }
+.seal.on:hover { transform: translateY(-4px) rotate(-1.5deg); }
+.seal-wrap { position: relative; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; }
+.seal-art { width: 100%; height: 100%; }
+.seal.on .seal-wrap::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .75) 50%, transparent 65%); transform: translateX(-120%); }
+.seal.on:hover .seal-wrap::after { transform: translateX(120%); transition: transform .7s; }
+.seal b { margin-top: 6px; font-size: 14px; }
+.seal:not(.on) b, .seal:not(.on) .seal-desc { opacity: .55; }
+.seal-desc { min-height: 2.6em; font-size: 12.5px; opacity: .8; }
+.tier { margin-top: 4px; padding: 3px 10px; font-size: 11px; font-style: normal; font-weight: 700; letter-spacing: .04em; color: #fff; background: var(--tier); border-radius: 999px; }
+.seal:not(.on) .tier { background: #b9c7d0; }
+
+.postmarks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.postmark { width: 108px; height: 108px; opacity: .9; mix-blend-mode: multiply; transform: rotate(var(--rot)); transition: transform .3s; }
+.postmark:hover { transform: rotate(0) scale(1.08); }
+.empty { font-size: 14px; opacity: .7; }
 
 /* aviso de conquista e rodapé */
 .toast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 10; padding: 10px 20px; background: var(--navy); color: #fff; font-weight: 500; text-align: center; border: 2px solid var(--ice); border-radius: 14px; box-shadow: 0 6px 20px rgba(0, 0, 0, .3); animation: pop .3s ease-out; }
@@ -128,7 +147,6 @@ footer { text-align: center; font-size: .8rem; color: #fff; opacity: .6; }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 
 /* ---------- telas largas e estreitas ---------- */
-@media (min-width: 860px) { .passport { display: grid; grid-template-columns: 260px 1fr; gap: 32px; } }
 @media (max-width: 859px) {
   .cols { grid-template-columns: 1fr; }
   .search-wrap { grid-template-columns: 1fr; }

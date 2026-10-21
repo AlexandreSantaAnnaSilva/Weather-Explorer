@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getRainOutlook, getWeather } from './api';
-import { initialState, levelOf, register } from './game';
+import { TIERS, initialState, levelOf, register } from './game';
 import { useLocalStorage } from './useLocalStorage';
 import { notFoundArt } from './units';
 import SearchBar from './components/SearchBar';
@@ -50,7 +50,7 @@ export default function App() {
       setGame(out.state);
       const msgs = [];
       if (out.isNew) msgs.push(`Novo carimbo: ${c.name}! +10 XP`);
-      out.won.forEach((b) => msgs.push(`Conquista: ${b.name}! +25 XP`));
+      out.won.forEach((b) => msgs.push(`Selo conquistado: ${b.name}! +${TIERS[b.tier].xp} XP`));
       if (msgs.length) setToast(msgs);
     } catch (e) {
       setError(e.message);
