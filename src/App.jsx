@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
-import { getWeather } from './api';
+import { getRainOutlook, getWeather } from './api';
 import { initialState, levelOf, register } from './game';
 import { useLocalStorage } from './useLocalStorage';
 import { notFoundArt } from './units';
 import SearchBar from './components/SearchBar';
 import Weather from './components/Weather';
 import Passport from './components/Passport';
+import RainCheck from './components/RainCheck';
 
 export default function App() {
   const [data, setData] = useState(null);
   const [run, setRun] = useState(0); // reinicia as animações a cada busca
+  const [date, setDate] = useState(''); // dia para checar chuva
+  const [outlook, setOutlook] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -38,6 +41,9 @@ export default function App() {
       setData(res);
       setRun((r) => r + 1);
       const c = res.current;
+      getRainOutlook(c.coord.lat, c.coord.lon)
+        .then((days) => setOutlook({ id: c.id, days }))
+        .catch(() => setOutlook({ id: c.id, failed: true }));
       const out = register(game, { id: c.id, name: c.name, country: c.sys.country, temp: c.main.temp, main: c.weather[0].main });
       setGame(out.state);
       const msgs = [];
@@ -59,6 +65,7 @@ export default function App() {
     );
   }
 
+  const ready = data && outlook?.id === data.current.id ? outlook : null;
   const favKey = data ? `${data.current.name},${data.current.sys.country}` : '';
   const isFav = favs.includes(favKey);
   const toggleFav = () => setFavs(isFav ? favs.filter((f) => f !== favKey) : [...favs, favKey]);
@@ -69,7 +76,7 @@ export default function App() {
       {toast && <div className="toast" role="status">{toast.map((m) => <p key={m}>{m}</p>)}</div>}
 
       <section className="card" aria-busy={loading}>
-        <SearchBar onSearch={load} onLocate={locate} loading={loading} />
+        <SearchBar onSearch={load} onLocate={locate} loading={loading} date={date} onDate={setDate} />
 
         {favs.length > 0 && (
           <div className="chips">
@@ -81,6 +88,10 @@ export default function App() {
             ))}
           </div>
         )}
+
+        <div className={`reveal${data && !error && date ? ' open' : ''}`}>
+          <div>{data && date && <RainCheck date={date} city={data.current.name} outlook={ready} />}</div>
+        </div>
 
         <div className={`reveal${error ? ' open' : ''}`}>
           <div>
@@ -110,7 +121,7 @@ export default function App() {
         <div><section className="card"><Passport game={game} /></section></div>
       </div>
 
-      <footer>Dados: OpenWeatherMap</footer>
+      <footer>Dados: OpenWeatherMap e Open-Meteo</footer>
     </main>
   );
 }

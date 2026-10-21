@@ -99,3 +99,22 @@ footer { text-align: center; font-size: .8rem; color: #fff; opacity: .6; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media (max-width: 380px) { .card { padding: 20px 18px; } .temp { font-size: 3.4rem; } }
+
+/* autocomplete e data */
+.suggest { list-style: none; margin-top: 8px; border: 2px solid var(--ice); border-radius: 12px; overflow: hidden; }
+.suggest li { padding: 10px 14px; font-weight: 500; cursor: pointer; animation: rise .3s both; animation-delay: calc(var(--i) * 40ms); }
+.suggest li.on, .suggest li:hover { background: var(--ice); }
+.daterow { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: 13px; font-weight: 500; }
+.daterow label { flex: 1; }
+.daterow input { padding: 6px 12px; border-radius: 999px; background: var(--ice); color-scheme: light; font-size: 14px; font-weight: 500; }
+.clear { font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* resultado: vai chover? */
+.rain { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 12px 14px; border: 2px solid var(--ice); border-radius: 14px; background: var(--ice); animation: rise .45s both; }
+.rain img { width: 58px; height: 58px; object-fit: contain; animation: pop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.rain small { display: block; font-size: 12px; opacity: .75; }
+.rain b { display: block; font-family: 'Poppins', 'Roboto', sans-serif; font-size: 20px; font-weight: 800; }
+.rain span { font-size: 14px; font-weight: 500; }
+.rain.mid { border-color: var(--navy); }
+.rain.high { background: var(--navy); border-color: var(--navy); color: #fff; }
+.rain.note { padding: 10px 14px; }

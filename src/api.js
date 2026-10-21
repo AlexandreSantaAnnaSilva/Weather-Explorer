@@ -38,3 +38,27 @@ export async function getWeather(params) {
   const [current, fc] = await Promise.all([get('weather', params), get('forecast', params)]);
   return { current, forecast: groupForecast(fc.list) };
 }
+
+// autocomplete: sugestões de cidades (Geocoding API, mesma chave)
+export async function suggestCities(q, signal) {
+  if (!KEY) return [];
+  const qs = new URLSearchParams({ q, limit: 5, appid: KEY });
+  const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?${qs}`, { signal });
+  if (!res.ok) return [];
+  const seen = new Set();
+  return (await res.json())
+    .map((c) => ({ lat: c.lat, lon: c.lon, label: [c.local_names?.pt || c.name, c.state, c.country].filter(Boolean).join(', ') }))
+    .filter((s) => !seen.has(s.label) && seen.add(s.label));
+}
+
+// chuva por dia, até 16 dias à frente (Open-Meteo: gratuito e sem chave)
+export async function getRainOutlook(lat, lon) {
+  const qs = new URLSearchParams({
+    latitude: lat, longitude: lon, timezone: 'auto', forecast_days: 16,
+    daily: 'precipitation_probability_max,precipitation_sum',
+  });
+  const res = await fetch(`https://api.open-meteo.com/v1/forecast?${qs}`);
+  if (!res.ok) throw new Error('Previsão por data indisponível.');
+  const { daily } = await res.json();
+  return Object.fromEntries(daily.time.map((d, i) => [d, { prob: daily.precipitation_probability_max[i], mm: daily.precipitation_sum[i] ?? 0 }]));
+}
