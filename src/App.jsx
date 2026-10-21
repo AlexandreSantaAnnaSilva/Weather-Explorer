@@ -4,7 +4,9 @@ import { initialState, levelOf, register } from './game';
 import { useLocalStorage } from './useLocalStorage';
 import { notFoundArt } from './units';
 import SearchBar from './components/SearchBar';
-import Weather from './components/Weather';
+import Now from './components/Now';
+import Details from './components/Details';
+import Forecast from './components/Forecast';
 import Passport from './components/Passport';
 import RainCheck from './components/RainCheck';
 
@@ -70,9 +72,14 @@ export default function App() {
   const isFav = favs.includes(favKey);
   const toggleFav = () => setFavs(isFav ? favs.filter((f) => f !== favKey) : [...favs, favKey]);
 
+  const showWx = data && !error;
+
   return (
-    <main className="stack">
-      <h1 className="sr">Weather Explorer</h1>
+    <main className={`dash${showWx ? ' wide' : ''}`}>
+      <header className="brand">
+        <h1>Weather Explorer</h1>
+        <p>Clima, previsão de 5 dias e chuva por data</p>
+      </header>
       {toast && <div className="toast" role="status">{toast.map((m) => <p key={m}>{m}</p>)}</div>}
 
       <section className="card" aria-busy={loading}>
@@ -89,10 +96,6 @@ export default function App() {
           </div>
         )}
 
-        <div className={`reveal${data && !error && date ? ' open' : ''}`}>
-          <div>{data && date && <RainCheck date={date} city={data.current.name} outlook={ready} />}</div>
-        </div>
-
         <div className={`reveal${error ? ' open' : ''}`}>
           <div>
             {error && (
@@ -103,16 +106,20 @@ export default function App() {
             )}
           </div>
         </div>
+      </section>
 
-        <div className={`reveal${data && !error ? ' open' : ''}`}>
-          <div>
-            {data && (
-              <Weather key={run} c={data.current} forecast={data.forecast} units={units}
-                onUnits={() => setUnits(units === 'C' ? 'F' : 'C')} isFav={isFav} onFav={toggleFav} />
-            )}
+      {showWx && (
+        <div className="cols" key={run}>
+          <div className="col left">
+            <Now c={data.current} units={units} onUnits={() => setUnits(units === 'C' ? 'F' : 'C')} isFav={isFav} onFav={toggleFav} />
+            {date && <RainCheck date={date} city={data.current.name} outlook={ready} />}
+          </div>
+          <div className="col right">
+            <Details c={data.current} units={units} />
+            <Forecast days={data.forecast} units={units} />
           </div>
         </div>
-      </section>
+      )}
 
       <button className="pp-btn" onClick={() => setShowPass((v) => !v)} aria-expanded={showPass}>
         Passaporte climático · Nível {levelOf(game.xp).level}
