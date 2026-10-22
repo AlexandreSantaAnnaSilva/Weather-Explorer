@@ -91,29 +91,3 @@ export function SealArt({ id, tier, earned }) {
     </svg>
   );
 }
-
-// carimbo de viagem: selo circular de correio, com o nome da cidade em arco
-const INKS = ['#0b4468', '#a4161a', '#1f7a5a'];
-const MONTHS = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
-const ROT = [-8, 5, -3, 9, -6, 3];
-
-export function Postmark({ id, city, country, date, index }) {
-  const name = (city.length > 13 ? `${city.slice(0, 12)}.` : city).toUpperCase();
-  const when = `${date.slice(8)} ${MONTHS[+date.slice(5, 7) - 1]} ${date.slice(0, 4)}`;
-  const arc = `arc-${id}`;
-  return (
-    <svg className="postmark" viewBox="0 0 120 120" role="img" aria-label={`Carimbo de ${city}, ${country}, ${when}`}
-      style={{ color: INKS[index % INKS.length], '--rot': `${ROT[index % ROT.length]}deg` }}>
-      <circle cx="60" cy="60" r="56" fill="none" stroke="currentColor" strokeWidth="3" />
-      <circle cx="60" cy="60" r="49" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" strokeWidth="1.2" />
-      <path id={arc} d="M22 60A38 38 0 0 1 98 60" fill="none" />
-      <text fill="currentColor" fontSize="10.5" fontWeight="700" letterSpacing="1.2" textAnchor="middle">
-        <textPath href={`#${arc}`} startOffset="50%">{name}</textPath>
-      </text>
-      <text x="60" y="69" textAnchor="middle" fill="currentColor" fontSize="22" fontWeight="800" fontFamily="Poppins, sans-serif">{country}</text>
-      <text x="60" y="93" textAnchor="middle" fill="currentColor" fontSize="8" fontWeight="700" letterSpacing=".6">{when}</text>
-      <circle cx="9" cy="60" r="1.8" fill="currentColor" /><circle cx="111" cy="60" r="1.8" fill="currentColor" />
-    </svg>
-  );
-}

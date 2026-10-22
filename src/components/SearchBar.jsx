@@ -3,13 +3,16 @@ import { suggestCities } from '../api';
 import { Pin, Search } from './Icons';
 
 const iso = (d) => d.toLocaleDateString('sv'); // AAAA-MM-DD local
+const norm = (s) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
 export default function SearchBar({ onSearch, onLocate, loading, date, onDate }) {
   const [q, setQ] = useState('');
   const [ticks, setTicks] = useState(0); // cada tecla reinicia a animação do pino
   const [items, setItems] = useState([]);
   const [active, setActive] = useState(-1);
+  const [hint, setHint] = useState('');
   const picked = useRef('');
+  const chosen = useRef(null);
 
   // busca sugestões 300 ms depois da última tecla (e cancela a anterior)
   useEffect(() => {
@@ -22,18 +25,36 @@ export default function SearchBar({ onSearch, onLocate, loading, date, onDate })
     return () => { clearTimeout(t); ctl.abort(); };
   }, [q]);
 
+  // escolhe um lugar exato (nome, estado, país e coordenadas)
   const choose = (s) => {
     picked.current = s.label;
+    chosen.current = s;
     setQ(s.label);
     setItems([]);
     setActive(-1);
-    onSearch({ lat: s.lat, lon: s.lon });
+    setHint('');
+    onSearch({ lat: s.lat, lon: s.lon }, s);
   };
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (active >= 0 && items[active]) return choose(items[active]);
-    if (q.trim()) { setItems([]); onSearch({ q: q.trim() }); }
+    const term = q.trim();
+    if (!term) return;
+    if (chosen.current?.label === term) return choose(chosen.current);
+
+    let list = items;
+    if (!list.length) { try { list = await suggestCities(term); } catch { list = []; } }
+    const exact = list.filter((s) => norm(s.name) === norm(term.split(',')[0]));
+    if (exact.length === 1) return choose(exact[0]);
+    if (exact.length === 0 && list.length) return choose(list[0]);
+    if (exact.length > 1) { // vários lugares com o mesmo nome: quem escolhe é você
+      setItems(list);
+      setActive(-1);
+      setHint('Há mais de um lugar com esse nome. Escolha um da lista.');
+      return;
+    }
+    onSearch({ q: term });
   };
 
   const onKeyDown = (e) => {
@@ -60,7 +81,7 @@ export default function SearchBar({ onSearch, onLocate, loading, date, onDate })
             aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? `sug-${active}` : undefined}
             value={q}
-            onChange={(e) => { setQ(e.target.value); setTicks((n) => n + 1); }}
+            onChange={(e) => { setQ(e.target.value); setHint(''); setTicks((n) => n + 1); }}
             onKeyDown={onKeyDown}
             placeholder="Digite uma cidade"
             aria-label="Cidade"
@@ -82,6 +103,7 @@ export default function SearchBar({ onSearch, onLocate, loading, date, onDate })
           ))}
         </ul>
       )}
+      {hint && <p className="hint" role="status">{hint}</p>}
 
       <div className="daterow">
         <label htmlFor="data-chuva">Vai chover em qual dia?</label>

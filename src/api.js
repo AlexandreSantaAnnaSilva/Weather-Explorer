@@ -39,6 +39,9 @@ export async function getWeather(params) {
   return { current, forecast: groupForecast(fc.list) };
 }
 
+// um lugar escolhido: nome, estado, país e coordenadas
+const placeFrom = (c) => ({ name: c.local_names?.pt || c.name, state: c.state, country: c.country, lat: c.lat, lon: c.lon });
+
 // autocomplete: sugestões de cidades (Geocoding API, mesma chave)
 export async function suggestCities(q, signal) {
   if (!KEY) return [];
@@ -47,8 +50,21 @@ export async function suggestCities(q, signal) {
   if (!res.ok) return [];
   const seen = new Set();
   return (await res.json())
-    .map((c) => ({ lat: c.lat, lon: c.lon, label: [c.local_names?.pt || c.name, c.state, c.country].filter(Boolean).join(', ') }))
+    .map((c) => ({ ...placeFrom(c), label: [c.local_names?.pt || c.name, c.state, c.country].filter(Boolean).join(', ') }))
     .filter((s) => !seen.has(s.label) && seen.add(s.label));
+}
+
+// "onde estou": descobre a cidade a partir das coordenadas
+export async function reversePlace(lat, lon) {
+  if (!KEY) return null;
+  try {
+    const qs = new URLSearchParams({ lat, lon, limit: 1, appid: KEY });
+    const res = await fetch(`https://api.openweathermap.org/geo/1.0/reverse?${qs}`);
+    const [c] = res.ok ? await res.json() : [];
+    return c ? placeFrom(c) : null;
+  } catch {
+    return null;
+  }
 }
 
 // chuva por dia, até 16 dias à frente (Open-Meteo: gratuito e sem chave)

@@ -6,7 +6,7 @@ export default function Now({ c, units, onUnits, isFav, onFav }) {
   const t = useCountUp(temp(c.main.temp, units));
   return (
     <article className="card now">
-      <p className="place">{c.name}, {c.sys.country}</p>
+     <p className="place">{c.name}{c.state ? `, ${c.state}` : ''}, {c.sys.country}</p>
       <img className="art" src={art(w.main)} alt={w.description} />
       <p className="temp">
         {t}

@@ -43,13 +43,21 @@ export function levelOf(xp) {
   return { level: i + 1, title: LEVELS[i].title, base: LEVELS[i].xp, next: LEVELS[i + 1]?.xp ?? null };
 }
 
-// w = { id, name, country, temp (°C), main }
+// chave estável de um lugar (nome + estado + país): Monte Verde (MG) e Monte Verde (México) são carimbos diferentes
+export const placeKey = (p) => [p.name, p.state || '', p.country].join('|').toLowerCase();
+
+// w = { id, name, state, country, temp (°C), main }
 export function register(state, w) {
-  const isNew = !state.cities[w.id];
+  const cities = { ...state.cities };
+  // carimbos antigos (chave numérica, sem estado) do mesmo lugar são migrados para a chave nova
+  const legacy = cities[w.id] ? null : Object.keys(cities).find((k) => !cities[k].state && cities[k].name === w.name && cities[k].country === w.country);
+  if (legacy) delete cities[legacy];
+  const isNew = !cities[w.id] && !legacy;
+  cities[w.id] = { name: w.name, state: w.state, country: w.country, main: w.main, date: today() };
   const next = {
     ...state,
     xp: state.xp + (isNew ? 10 : 1),
-    cities: { ...state.cities, [w.id]: { name: w.name, country: w.country, main: w.main, date: today() } },
+    cities,
     days: state.days.includes(today()) ? state.days : [...state.days, today()],
   };
   const won = BADGES.filter((b) => !state.badges.includes(b.id) && b.test(w, next));

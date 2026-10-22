@@ -130,7 +130,7 @@ h2, h3, .temp { font-family: 'Poppins', 'Roboto', sans-serif; font-weight: 800; 
 .seal:not(.on) .tier { background: #b9c7d0; }
 
 .postmarks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-.postmark { width: 108px; height: 108px; opacity: .9; mix-blend-mode: multiply; transform: rotate(var(--rot)); transition: transform .3s; }
+.postmark { width: 108px; height: 108px; transform: rotate(var(--rot)); transition: transform .3s; filter: drop-shadow(0 2px 3px rgba(6, 40, 61, .25)); }
 .postmark:hover { transform: rotate(0) scale(1.08); }
 .empty { font-size: 14px; opacity: .7; }
 
@@ -154,3 +154,10 @@ footer { text-align: center; font-size: .8rem; color: #fff; opacity: .6; }
   .card { padding: 20px 18px; }
 }
 @media (max-width: 480px) { .tiles { grid-template-columns: repeat(2, 1fr); } .temp { font-size: 3.4rem; } }
+
+/* dica de busca e remoção de carimbo */
+.hint { grid-column: 1; margin-top: 8px; font-size: 13px; font-weight: 500; color: #a4161a; }
+.pm { position: relative; }
+.pm-x { position: absolute; top: 0; right: 0; padding: 2px 8px; font-size: 11px; font-weight: 700; color: #fff; background: var(--navy); border-radius: 999px; opacity: 0; transition: opacity .2s; }
+.pm:hover .pm-x, .pm-x:focus-visible { opacity: 1; }
+@media (hover: none) { .pm-x { opacity: 1; } }
