@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getRainOutlook, getWeather } from './api';
-import { TIERS, initialState, levelOf, register } from './game';
+import { getRainOutlook, getWeather, reversePlace } from './api';
+import { TIERS, initialState, levelOf, placeKey, register } from './game';
 import { useLocalStorage } from './useLocalStorage';
 import { notFoundArt } from './units';
 import SearchBar from './components/SearchBar';
@@ -35,21 +35,26 @@ export default function App() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  async function load(params) {
+  // params: { q } ou { lat, lon }. place: o lugar que a pessoa escolheu (nome, estado, país, coordenadas)
+  async function load(params, place) {
     setLoading(true);
     setError('');
     try {
       const res = await getWeather(params);
-      setData(res);
+      const raw = res.current;
+      // a API devolve o nome da estação mais próxima (ex.: "Camanducaia"); mostramos o lugar escolhido
+      const p = place || { name: raw.name, country: raw.sys.country, lat: raw.coord.lat, lon: raw.coord.lon };
+      const c = { ...raw, name: p.name, state: p.state, sys: { ...raw.sys, country: p.country } };
+      const key = placeKey(p);
+      setData({ ...res, current: c, place: { name: p.name, state: p.state, country: p.country, lat: p.lat, lon: p.lon }, key });
       setRun((r) => r + 1);
-      const c = res.current;
-      getRainOutlook(c.coord.lat, c.coord.lon)
-        .then((days) => setOutlook({ id: c.id, days }))
-        .catch(() => setOutlook({ id: c.id, failed: true }));
-      const out = register(game, { id: c.id, name: c.name, country: c.sys.country, temp: c.main.temp, main: c.weather[0].main });
+      getRainOutlook(p.lat, p.lon)
+        .then((days) => setOutlook({ id: key, days }))
+        .catch(() => setOutlook({ id: key, failed: true }));
+      const out = register(game, { id: key, name: p.name, state: p.state, country: p.country, temp: c.main.temp, main: c.weather[0].main });
       setGame(out.state);
       const msgs = [];
-      if (out.isNew) msgs.push(`Novo carimbo: ${c.name}! +10 XP`);
+      if (out.isNew) msgs.push(`Novo carimbo: ${p.name}! +10 XP`);
       out.won.forEach((b) => msgs.push(`Selo conquistado: ${b.name}! +${TIERS[b.tier].xp} XP`));
       if (msgs.length) setToast(msgs);
     } catch (e) {
@@ -62,15 +67,24 @@ export default function App() {
   function locate() {
     if (!navigator.geolocation) return setError('Seu navegador não permite geolocalização.');
     navigator.geolocation.getCurrentPosition(
-      (p) => load({ lat: p.coords.latitude, lon: p.coords.longitude }),
+      async (pos) => {
+        const { latitude: lat, longitude: lon } = pos.coords;
+        const place = await reversePlace(lat, lon);
+        load({ lat, lon }, place || undefined);
+      },
       () => setError('Não foi possível obter sua localização. Permita o acesso ou busque pelo nome.'),
     );
   }
 
-  const ready = data && outlook?.id === data.current.id ? outlook : null;
-  const favKey = data ? `${data.current.name},${data.current.sys.country}` : '';
-  const isFav = favs.includes(favKey);
-  const toggleFav = () => setFavs(isFav ? favs.filter((f) => f !== favKey) : [...favs, favKey]);
+  const removeCity = (id) => setGame((g) => {
+    const cities = { ...g.cities };
+    delete cities[id];
+    return { ...g, cities };
+  });
+
+  const ready = data && outlook?.id === data.key ? outlook : null;
+  const isFav = !!data && favs.some((f) => (f.key ?? f) === data.key);
+  const toggleFav = () => setFavs(isFav ? favs.filter((f) => (f.key ?? f) !== data.key) : [...favs, { key: data.key, ...data.place }]);
 
   const showWx = data && !error;
 
@@ -87,12 +101,16 @@ export default function App() {
 
         {favs.length > 0 && (
           <div className="chips">
-            {favs.map((f) => (
-              <span key={f} className="chip">
-                <button onClick={() => load({ q: f })}>{f.split(',')[0]}</button>
-                <button className="rm" onClick={() => setFavs(favs.filter((x) => x !== f))} aria-label={`Remover ${f}`}>remover</button>
-              </span>
-            ))}
+            {favs.map((f) => {
+              const k = f.key ?? f;
+              const name = f.name ?? f.split(',')[0];
+              return (
+                <span key={k} className="chip">
+                  <button onClick={() => (f.lat != null ? load({ lat: f.lat, lon: f.lon }, f) : load({ q: f }))}>{name}</button>
+                  <button className="rm" onClick={() => setFavs(favs.filter((x) => (x.key ?? x) !== k))} aria-label={`Remover ${name}`}>remover</button>
+                </span>
+              );
+            })}
           </div>
         )}
 
@@ -125,7 +143,7 @@ export default function App() {
         Passaporte climático · Nível {levelOf(game.xp).level}
       </button>
       <div className={`reveal${showPass ? ' open' : ''}`}>
-        <div><section className="card"><Passport game={game} /></section></div>
+        <div><section className="card"><Passport game={game} onRemoveCity={removeCity} /></section></div>
       </div>
 
       <footer>Dados: OpenWeatherMap e Open-Meteo</footer>

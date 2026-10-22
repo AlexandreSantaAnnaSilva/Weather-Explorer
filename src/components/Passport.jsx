@@ -1,7 +1,8 @@
 import { BADGES, TIERS, levelOf } from '../game';
-import { Postmark, SealArt } from './StampArt';
+import { SealArt } from './StampArt';
+import { Postmark } from './CountryStamp';
 
-export default function Passport({ game }) {
+export default function Passport({ game, onRemoveCity  }) {
   const L = levelOf(game.xp);
   const pct = L.next ? Math.round(((game.xp - L.base) / (L.next - L.base)) * 100) : 100;
   const cities = Object.entries(game.cities);
@@ -46,8 +47,10 @@ export default function Passport({ game }) {
       <div className="postmarks">
         {cities.length === 0 && <p className="empty">Pesquise uma cidade para ganhar o seu primeiro carimbo.</p>}
         {cities.map(([id, c], i) => (
-          <Postmark key={id} id={id} city={c.name} country={c.country} date={c.date} index={i} />
-        ))}
+          <div key={id} className="pm">
+            <Postmark id={id} city={c.name} country={c.country} date={c.date} index={i} />
+            <button className="pm-x" onClick={() => onRemoveCity(id)} aria-label={`Remover o carimbo de ${c.name}`}>remover</button>
+          </div>        ))}
       </div>
     </section>
   );
