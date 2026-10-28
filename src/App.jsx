@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getRainOutlook, getWeather, reversePlace } from './api';
-import { TIERS, initialState, levelOf, placeKey, register } from './game';
+import { TIERS, initialState, levelOf, placeKey, register, track } from './game';
 import { useLocalStorage } from './useLocalStorage';
 import { notFoundArt } from './units';
 import SearchBar from './components/SearchBar';
@@ -51,12 +51,12 @@ export default function App() {
       getRainOutlook(p.lat, p.lon)
         .then((days) => setOutlook({ id: key, days }))
         .catch(() => setOutlook({ id: key, failed: true }));
-      const out = register(game, { id: key, name: p.name, state: p.state, country: p.country, temp: c.main.temp, main: c.weather[0].main });
+      const out = register(game, {
+        id: key, name: p.name, state: p.state, country: p.country, lat: p.lat,
+        temp: c.main.temp, main: c.weather[0].main, wind: c.wind.speed, night: c.weather[0].icon.endsWith('n'),
+      });
       setGame(out.state);
-      const msgs = [];
-      if (out.isNew) msgs.push(`Novo carimbo: ${p.name}! +10 XP`);
-      out.won.forEach((b) => msgs.push(`Selo conquistado: ${b.name}! +${TIERS[b.tier].xp} XP`));
-      if (msgs.length) setToast(msgs);
+      announce(out.won, out.isNew ? [`Novo carimbo: ${p.name}! +10 XP`] : []);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -76,6 +76,22 @@ export default function App() {
     );
   }
 
+  // avisos na tela quando algum selo é conquistado
+  const announce = (won, msgs = []) => {
+    won.forEach((b) => msgs.push(`${b.secret ? 'Selo secreto' : 'Selo conquistado'}: ${b.name}! +${TIERS[b.tier].xp} XP`));
+    if (msgs.length) setToast(msgs);
+  };
+  // conta eventos que não são buscas (ex.: 'rain', 'favs') e confere os selos
+  const count = (key) => {
+    const out = track(game, key);
+    setGame(out.state);
+    announce(out.won);
+  };
+  const pickDate = (v) => {
+    setDate(v);
+    if (v) count('rain');
+  };
+
   const removeCity = (id) => setGame((g) => {
     const cities = { ...g.cities };
     delete cities[id];
@@ -84,7 +100,10 @@ export default function App() {
 
   const ready = data && outlook?.id === data.key ? outlook : null;
   const isFav = !!data && favs.some((f) => (f.key ?? f) === data.key);
-  const toggleFav = () => setFavs(isFav ? favs.filter((f) => (f.key ?? f) !== data.key) : [...favs, { key: data.key, ...data.place }]);
+  const toggleFav = () => {
+    if (!isFav) count('favs');
+    setFavs(isFav ? favs.filter((f) => (f.key ?? f) !== data.key) : [...favs, { key: data.key, ...data.place }]);
+  };
 
   const showWx = data && !error;
 
@@ -97,7 +116,7 @@ export default function App() {
       {toast && <div className="toast" role="status">{toast.map((m) => <p key={m}>{m}</p>)}</div>}
 
       <section className="card" aria-busy={loading}>
-        <SearchBar onSearch={load} onLocate={locate} loading={loading} date={date} onDate={setDate} />
+        <SearchBar onSearch={load} onLocate={locate} loading={loading} date={date} onDate={pickDate} />
 
         {favs.length > 0 && (
           <div className="chips">
