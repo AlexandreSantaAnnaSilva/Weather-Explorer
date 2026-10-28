@@ -2,11 +2,12 @@ import { BADGES, TIERS, levelOf } from '../game';
 import { SealArt } from './StampArt';
 import { Postmark } from './CountryStamp';
 
-export default function Passport({ game, onRemoveCity  }) {
+export default function Passport({ game, onRemoveCity }) {
   const L = levelOf(game.xp);
   const pct = L.next ? Math.round(((game.xp - L.base) / (L.next - L.base)) * 100) : 100;
   const cities = Object.entries(game.cities);
   const earned = BADGES.filter((b) => game.badges.includes(b.id)).length;
+  const secretsLeft = BADGES.filter((b) => b.secret && !game.badges.includes(b.id)).length;
 
   return (
     <section className="album">
@@ -28,16 +29,22 @@ export default function Passport({ game, onRemoveCity  }) {
       </div>
 
       <h3>Selos</h3>
+      {secretsLeft > 0 && (
+        <p className="secret-note">
+          {secretsLeft === 1 ? 'Há 1 selo secreto esperando' : `Há ${secretsLeft} selos secretos esperando`} para ser descoberto. Explore para encontrar!
+        </p>
+      )}
       <ul className="seals">
         {BADGES.map((b) => {
           const on = game.badges.includes(b.id);
+          const hidden = b.secret && !on;
           const t = TIERS[b.tier];
           return (
-            <li key={b.id} className={`seal${on ? ' on' : ''}`} style={{ '--tier': t.color }}>
-              <div className="seal-wrap"><SealArt id={b.id} tier={b.tier} earned={on} /></div>
-              <b>{b.name}</b>
-              <span className="seal-desc">{b.desc}</span>
-              <em className="tier">{t.label} · +{t.xp} XP</em>
+            <li key={b.id} className={`seal${on ? ' on' : ''}${b.secret ? ' secret' : ''}`} style={{ '--tier': t.color }}>
+              <div className="seal-wrap"><SealArt id={b.id} tier={b.tier} earned={on} secret={b.secret} /></div>
+              <b>{hidden ? 'Selo secreto' : b.name}</b>
+              <span className="seal-desc">{hidden ? b.hint : b.desc}</span>
+              <em className="tier">{hidden ? 'Secreto' : `${b.secret ? 'Secreto · ' : ''}${t.label} · +${t.xp} XP`}</em>
             </li>
           );
         })}
@@ -50,7 +57,8 @@ export default function Passport({ game, onRemoveCity  }) {
           <div key={id} className="pm">
             <Postmark id={id} city={c.name} country={c.country} date={c.date} index={i} />
             <button className="pm-x" onClick={() => onRemoveCity(id)} aria-label={`Remover o carimbo de ${c.name}`}>remover</button>
-          </div>        ))}
+          </div>
+        ))}
       </div>
     </section>
   );
